@@ -1,0 +1,25 @@
+### Predict Test
+POST http://localhost:8000/predict
+Content-Type: application/json
+
+{
+    "temp": 2,
+    "SR": 23.7,
+    "PM2_5": 385.4,
+    "WS": 0.43,
+    "PM10": 385.4,
+    "NO2": 31.7,
+    "AC_CURRENT": 3.21,
+    "AC_VOLTAGE": 236.5,
+    "metric_date": "12/27/23"
+}
+
+
+### Predict Range Test
+POST http://localhost:8000/predict/range
+Content-Type: application/json
+
+{
+    "start_date": "11/01/23",
+    "end_date": "12/04/23"
+}
