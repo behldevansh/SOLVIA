@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from starlette.middleware import Middleware
-from config.dbConfig import init_db
 from middleware.HandleExceptions import HandleExceptionsMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from routes.predict import router as predict_router
@@ -14,6 +13,7 @@ async def lifespan_context(app_instance: FastAPI):
     print("Application starting up.")
     ml_models.load_scaler()
     ml_models.load_model()
+    ml_models.load_previous_data()
     yield
     print("Application shutting down.")
 

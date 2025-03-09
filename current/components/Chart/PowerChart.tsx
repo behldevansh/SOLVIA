@@ -70,7 +70,7 @@ export default function PowerChart({ data }: { data: any }) {
         return null
     }
     return (
-        <Card className="border border-gray-200">
+        <Card className="border border-gray-200 w-full">
             <CardHeader>
                 <CardTitle>Area Chart - AC Power</CardTitle>
                 <CardDescription>
@@ -89,11 +89,11 @@ export default function PowerChart({ data }: { data: any }) {
                     >
                         <CartesianGrid vertical={false} />
                         <XAxis
-                            dataKey="date"
+                            dataKey="metric_date"
                             tickLine={false}
                             axisLine={false}
                             tickMargin={8}
-                            tickFormatter={(value) => new Date(value).toLocaleDateString("en-IN")}
+                            tickFormatter={(value) => new Date(value).toLocaleDateString("EN-IN")}
                         />
                         <YAxis dataKey="ac_power" tickLine={false} axisLine={false} unit={"W"} />
                         <ChartTooltip
@@ -114,10 +114,10 @@ export default function PowerChart({ data }: { data: any }) {
                 <div className="flex w-full items-start gap-2 text-sm">
                     <div className="grid gap-2">
                         <div className="flex items-center gap-2 font-medium leading-none">
-                            Total AC Power: {chartData.reduce((sum, item) => sum + item.ac_power, 0).toFixed(2)} W
+                            Total AC Power: {chartData.reduce((acc, item) => acc + item.ac_power, 0).toFixed(2)} W
                         </div>
                         <div className="flex items-center gap-2 leading-none text-muted-foreground">
-                            Date Range: {new Date(chartData[0].date).toLocaleDateString("EN-IN")} -{" "} {new Date(chartData[chartData.length - 1].date).toLocaleDateString("EN-IN")}
+                            Date Range: {new Date(chartData[0].metric_date).toLocaleDateString("EN-IN")}-{new Date(chartData[chartData.length - 1].metric_date).toLocaleDateString("EN-IN")}
                             </div>
                     </div>
                 </div>

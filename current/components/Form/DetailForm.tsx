@@ -50,16 +50,19 @@ export function DetailForm({ setData }: { setData: any }) {
   const onSubmit = (data: any) => {
     const { name, dateRange } = data;
     const { from, to } = dateRange;
-    const response = fetch("http://localhost:8000/predict/range/", {
-      method: "POST",
-      body: JSON.stringify({
-        start_date: format(from, "yyyy-MM-dd"),
-        end_date: format(to, "yyyy-MM-dd"),
-      }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const response = fetch(
+      new URL("/predict/range", process.env.NEXT_PUBLIC_API_URL),
+      {
+        method: "POST",
+        body: JSON.stringify({
+          start_date: format(from, "yyyy-MM-dd"),
+          end_date: format(to, "yyyy-MM-dd"),
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     response
       .then((res) => res.json())
@@ -125,9 +128,22 @@ export function DetailForm({ setData }: { setData: any }) {
                       <Calendar
                         initialFocus
                         mode="range"
-                        // defaultMonth={addDays(new Date(), 1)}
                         selected={field.value}
-                        onSelect={field.onChange}
+                        onSelect={(range) => {
+                          if (range?.from) {
+                            const maxToDate = addDays(range.from, 15);
+                            if (range.to && range.to > maxToDate) {
+                              range.to = maxToDate;
+                            }
+                          }
+                          field.onChange(range);
+                        }}
+                        disabled={(date) =>
+                          field.value?.from
+                            ? date < field.value.from ||
+                              date > addDays(field.value.from, 15)
+                            : false
+                        }
                         numberOfMonths={2}
                       />
                     </PopoverContent>

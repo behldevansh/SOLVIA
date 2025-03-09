@@ -18,7 +18,7 @@ export default function Page() {
           <div className="text-2xl font-bold text-center mb-4 mt-8">
             Power Charts
           </div>
-          <div className="max-w-2xl mx-auto my-4">
+          <div className="max-w-3xl mx-auto my-4">
             <PowerChart data={data} />
           </div>
         </>

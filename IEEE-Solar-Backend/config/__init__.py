@@ -11,6 +11,11 @@ MONGO_DB_NAME = os.getenv("MONGO_DB_NAME")
 
 SCALER_URL = os.getenv("SCALER_URL")
 MODEL_URL = os.getenv("MODEL_URL")
+PREVIOUS_DATA_URL = os.getenv("PREVIOUS_DATA_URL")
+LOCAL_MODEL_PATH = os.getenv("LOCAL_MODEL_PATH")
+LOCAL_SCALER_PATH = os.getenv("LOCAL_SCALER_PATH")
+
+ENVIRONMENT = os.getenv("ENV")
 
 print(f"SCALER_URL: {SCALER_URL}")
 print(f"MongoDB URI: {MONGO_DB_URI}")

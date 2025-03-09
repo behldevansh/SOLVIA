@@ -40,29 +40,31 @@ async def predict(request: RequestBody):
 async def predict_range(request: RangeDates):
     ScalerModel = ml_models.scaler
     MLModel = ml_models.model
+    PrevuosData = ml_models.previos_data
     if ScalerModel is None:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Scaler Model not found")
     
     if MLModel is None:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Model not found")
     
+    if PrevuosData is None:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Previous Data not found")
+    
+
+    
     
     start_date = request.start_date
     end_date = request.end_date
-    date_range = pd.date_range(start=start_date, end=end_date, freq='D')
+    date_range = pd.date_range(start=start_date, end=end_date, freq='15T')
     df = pd.DataFrame(date_range, columns=['metric_date'])
-    df['metric_date'] = df['metric_date'].map(pd.Timestamp.timestamp)
-    df["temp_3 (Â°C)"] = COSNT_TEMPRATURE
-    df["SR (W/mt2)"] = COSNT_SOLAR_RADIATION
-    df["PM2.5 (Âµg/mÂ³)"] = COSNT_PM2_5
-    df["WS (m/s)"] = COSNT_WIND_SPEED
-    df["PM10 (Âµg/mÂ³)"] = COSNT_PM10
-    df["NO2 (Âµg/mÂ³)"] = COSNT_NO2
-    df["AC CURRENT-1 (A)"] = COSNT_AC_CURRENT
-    df["AC VOLTAGE-3 (V)"] = COSNT_AC_VOLTAGE
-    
+   
+    df['day_month'] = pd.to_datetime(df['metric_date'], format='%Y-%m-%d').dt.strftime('%d-%m %H:%M')
+    merged_df = pd.merge(df, PrevuosData, how='left', on='day_month')
+    merged_df = merged_df.drop(columns=['day_month'])
+    merged_df['metric_date'] = merged_df['metric_date'].map(pd.Timestamp.timestamp)
+
     # Ensure the feature names are in the same order as they were during fit
-    X = df[[
+    X = merged_df[[
         "temp_3 (Â°C)", "SR (W/mt2)", "PM2.5 (Âµg/mÂ³)", "WS (m/s)", 
         "PM10 (Âµg/mÂ³)", "NO2 (Âµg/mÂ³)", "AC CURRENT-1 (A)", "AC VOLTAGE-3 (V)", "metric_date"
     ]]
@@ -71,6 +73,6 @@ async def predict_range(request: RangeDates):
 
     predictions = MLModel.predict(scaled_data)
     pridiction_list = predictions.tolist()
-    date_list = date_range.strftime("%Y-%m-%d").tolist()
+    date_list = date_range.strftime("%Y-%m-%d %H:%M:%S").tolist()
     data = [{"ac_power": ac_power, "metric_date": date} for ac_power, date in zip(pridiction_list, date_list)]
     return RangeResponse(data=data)
