@@ -28,7 +28,7 @@ const Heading = () => {
       )}
       {isAuthenticated && !isLoading && (
         <Button asChild>
-          <Link href="/ML">
+          <Link href="/documents">
             Enter Helios Haven
             <ArrowRight className="h-4 w-4 ml-2" />
           </Link>
@@ -42,7 +42,6 @@ const Heading = () => {
           </Button>
         </SignInButton>
       )}
-      
       
     </div>
   )

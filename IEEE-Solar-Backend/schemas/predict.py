@@ -22,3 +22,8 @@ class RangeDates(BaseModel):
     
 class RangeResponse(BaseModel):
     data: List[dict] = Field(..., title="Data", description="List of AC Power and Metric Date", example=[{"ac_power": 500.0, "metric_date": "2025-01-01"}, {"AC_POWER": 600.0, "metric_date": "2025-01-02"}])
+
+class DustPredictionRequest(BaseModel):
+    start_date: str = Field(..., title="Start Date", description="Start date of the range", example="2025-01-01")
+    end_date: str = Field(..., title="End Date", description="End date of the range", example="2025-01-02")
+    last_cleaning_date: str = Field(..., title="Last Cleaning Date", description="Last cleaning date", example="2025-01-01")

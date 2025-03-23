@@ -14,6 +14,7 @@ async def lifespan_context(app_instance: FastAPI):
     ml_models.load_scaler()
     ml_models.load_model()
     ml_models.load_previous_data()
+    ml_models.load_dust_model()
     yield
     print("Application shutting down.")
 

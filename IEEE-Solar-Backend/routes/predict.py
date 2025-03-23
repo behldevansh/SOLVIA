@@ -3,7 +3,18 @@ from schemas.predict import RequestBody, ResponseBody, RangeDates, RangeResponse
 import pandas as pd
 from config import *
 from models import ml_models
+from fastapi import APIRouter, HTTPException, status, Body
+from schemas.predict import RequestBody, ResponseBody, RangeDates, RangeResponse, DustPredictionRequest
+import pandas as pd
+from datetime import timedelta
+from config import *
+from models import ml_models
+import random
+import numpy as np
+from datetime import datetime, date
 router = APIRouter()
+
+from pydantic import BaseModel, Field
 
 
 
@@ -35,12 +46,15 @@ async def predict(request: RequestBody):
     prediction = MLModel.predict(scaled_data)
     return {"ac_power": prediction[0]}
     # return {"prediction": 0.0}
+
+
+
     
 @router.post("/range")
 async def predict_range(request: RangeDates):
     ScalerModel = ml_models.scaler
     MLModel = ml_models.model
-    PrevuosData = ml_models.previos_data
+    PrevuosData = ml_models.previous_data
     if ScalerModel is None:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Scaler Model not found")
     
@@ -76,3 +90,41 @@ async def predict_range(request: RangeDates):
     date_list = date_range.strftime("%Y-%m-%d %H:%M:%S").tolist()
     data = [{"ac_power": ac_power, "metric_date": date} for ac_power, date in zip(pridiction_list, date_list)]
     return RangeResponse(data=data)
+
+
+
+
+@router.post("/dust")
+async def predict_range(request: DustPredictionRequest = Body(...)):
+    if ml_models.dust_model is None:
+        ml_models.load_dust_model()
+        
+    if ml_models.previous_data is None:  # Fixed typo: previos -> previous
+        ml_models.load_previous_data()
+
+    # Validate date format
+    try:
+        request.start_date = pd.to_datetime(request.start_date, format="%Y-%m-%d").strftime("%Y-%m-%d")
+        request.end_date = pd.to_datetime(request.end_date, format="%Y-%m-%d").strftime("%Y-%m-%d")
+        request.last_cleaning_date = pd.to_datetime(request.last_cleaning_date, format="%Y-%m-%d").strftime("%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Invalid date format. Please use YYYY-MM-DD format."
+        )
+    
+    try:
+        result = ml_models.dust_model_predict(
+            request.start_date,
+            request.end_date,
+            request.last_cleaning_date
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error generating dust prediction: {str(e)}"
+        )
+
+
+    
