@@ -10,10 +10,12 @@ import { SignInButton, UserButton} from '@clerk/clerk-react';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/spinner';
 import Link from 'next/link';
+import { usePathname, useSearchParams } from 'next/navigation'
 
 const navbar = () => {
     const {isAuthenticated,isLoading} = useConvexAuth();
     const scrolled = useScrollTop();
+    const {pathname} = usePathname();
   return (
     <div className={cn(
         "z-50 bg-background dark:bg-[#1F1F1F] fixed top-0 flex items-center w-full p-6",
@@ -29,17 +31,22 @@ const navbar = () => {
             <SignInButton mode='modal'>
               <Button size="sm">Log In</Button>
             </SignInButton>
-            <SignInButton mode='modal'>
-              <Button  size="sm">Join Helios Haven</Button>
-            </SignInButton>
             </>
           )}
           {isAuthenticated && !isLoading && (
           <>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/ML">
-                Enter Helios Haven
-              </Link>
+            <Button variant="secondary" size="sm" asChild>
+             {
+                pathname === '/ML' ? (
+                  <Link href="/">
+                    <span>Home</span>
+                  </Link>
+                ) : (
+                  <Link href="/ML">
+                    <span>ML</span>
+                  </Link>
+                )
+             }
             </Button>
             <UserButton
               afterSignOutUrl="/"

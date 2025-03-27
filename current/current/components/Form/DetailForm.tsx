@@ -59,7 +59,7 @@ export function DetailForm({ onSubmit }: { onSubmit: any }) {
       },
       last_cleaning_date: null,
       cleaning_type: "onetime",
-      cleaning_frequency : ""
+      cleaning_frequency: "",
     },
   });
 
@@ -122,21 +122,9 @@ export function DetailForm({ onSubmit }: { onSubmit: any }) {
                         initialFocus
                         mode="range"
                         selected={field.value}
-                        onSelect={(range) => {
-                          if (range?.from) {
-                            const maxToDate = addDays(range.from, 15);
-                            if (range.to && range.to > maxToDate) {
-                              range.to = maxToDate;
-                            }
-                          }
-                          field.onChange(range);
+                        onSelect={(date: DateRange) => {
+                          field.onChange(date);
                         }}
-                        disabled={(date) =>
-                          field.value?.from
-                            ? date < field.value.from ||
-                              date > addDays(field.value.from, 15)
-                            : false
-                        }
                         numberOfMonths={2}
                       />
                     </PopoverContent>
@@ -182,12 +170,11 @@ export function DetailForm({ onSubmit }: { onSubmit: any }) {
                         onSelect={field.onChange}
                         disabled={(date) => {
                           const start_date = form.watch("dateRange")?.from;
-                          if(start_date) {
+                          if (start_date) {
                             return date > start_date;
                           }
                           return false;
                         }}
-                        
                       />
                     </PopoverContent>
                   </Popover>

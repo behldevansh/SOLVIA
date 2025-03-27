@@ -35,7 +35,7 @@ export default function Page() {
   };
 
   return (
-    <div className="p-4 bg-white dark:bg-[#1F1F1F]">
+    <div className="p-4 dark:bg-[#1F1F1F] min-h-screen">
       {visible ? (
         <>
           <div className="flex justify-between items-center mb-4 container mx-auto">
