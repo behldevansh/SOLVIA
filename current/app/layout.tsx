@@ -7,7 +7,7 @@ import { ConvexClientProvider } from '@/components/providers/convex-provider'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'SOLVIA',
+  title: 'Opti-Clean',
   description: '',
   icons: {
     icon: [

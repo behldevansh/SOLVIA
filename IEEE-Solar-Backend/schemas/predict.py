@@ -19,6 +19,8 @@ class ResponseBody(BaseModel):
 class RangeDates(BaseModel):
     start_date: str = Field(..., title="Start Date", description="Start date of the range", example="2025-01-01")
     end_date: str = Field(..., title="End Date", description="End date of the range", example="2025-01-02")
+    longitude: float = Field(..., title="Longitude", description="Longitude of the location", example=77.0)
+    latitude: float = Field(..., title="Latitude", description="Latitude of the location", example=28.0)
     
 class RangeResponse(BaseModel):
     data: List[dict] = Field(..., title="Data", description="List of AC Power and Metric Date", example=[{"ac_power": 500.0, "metric_date": "2025-01-01"}, {"AC_POWER": 600.0, "metric_date": "2025-01-02"}])
@@ -27,3 +29,11 @@ class DustPredictionRequest(BaseModel):
     start_date: str = Field(..., title="Start Date", description="Start date of the range", example="2025-01-01")
     end_date: str = Field(..., title="End Date", description="End date of the range", example="2025-01-02")
     last_cleaning_date: str = Field(..., title="Last Cleaning Date", description="Last cleaning date", example="2025-01-01")
+
+class CombinePredictionRequest(BaseModel):
+    start_date: str = Field(..., title="Start Date", description="Start date of the range", example="2025-01-01")
+    end_date: str = Field(..., title="End Date", description="End date of the range", example="2025-01-02")
+    last_cleaning_date: str = Field(..., title="Last Cleaning Date", description="Last cleaning date", example="2025-01-01")
+    longitude: float = Field(..., title="Longitude", description="Longitude of the location", example=77.0)
+    latitude: float = Field(..., title="Latitude", description="Latitude of the location", example=28.0)
+    api_key: Optional[str] = Field(default="f074a590d32963feb94eba89ff93756b", title="API Key", description="API key for external services", example="your_api_key")

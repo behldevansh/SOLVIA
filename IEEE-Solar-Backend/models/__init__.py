@@ -65,7 +65,7 @@ class MLModels:
             model_data.seek(0)
             self.previous_data = pd.read_csv(model_data)
             self.previous_data['day_month'] = pd.to_datetime(self.previous_data['metric_date'], format='mixed', dayfirst=True).dt.strftime('%d-%m %H:%M')
-            self.previous_data.drop(columns=['metric_date'], inplace=True)
+            # self.previous_data.drop(columns=['metric_date'], inplace=True)
             return self.previous_data
         except Exception as e:
             print(f"Error loading previous data from {self.previous_data_url}: {e}", file=sys.stderr)
@@ -87,35 +87,32 @@ class MLModels:
         try:
             if self.dust_model is None:
                 self.load_dust_model()
-                
+            
             if self.previous_data is None:
                 self.load_previous_data()
-                
+            
             CLEANING_COST = 2000  # ₹2000 per cleaning
             COST_PER_KWH = 7.5    # ₹7.5 per kWh
             PANEL_CAPACITY = 15000  # 15kW system
             REGULAR_CLEANING_INTERVAL = 30  # Days
-                
+            
             start_date = pd.to_datetime(start_date)
             end_date = pd.to_datetime(end_date)
             last_cleaning_date = pd.to_datetime(last_cleaning_date)
             
+            if start_date > end_date:
+                raise ValueError("Start date must be before end date")
+            
             days_to_forecast = (end_date - start_date).days + 1
-            
             date_range = pd.date_range(start=start_date, end=end_date)
+
             forecast_df = pd.DataFrame({'Date': date_range})
-            
-            forecast_df['day_of_year'] = forecast_df['Date'].dt.dayofyear
-            forecast_df['month'] = forecast_df['Date'].dt.month
-            forecast_df['ds'] = forecast_df['Date']
+            forecast_df['ds'] = forecast_df['Date'].dt.strftime('%Y-%m-%d')
             
             prediction_df = self.dust_model.predict(forecast_df[['ds']])
-            forecast_df['Dust'] = prediction_df['yhat']
-            
-            forecast_df['Dust'] = forecast_df['Dust'].clip(lower=0)
+            forecast_df['Dust'] = prediction_df['yhat'].clip(lower=0)
             
             results = []
-            
             for _, row in forecast_df.iterrows():
                 dust_loss_watts = PANEL_CAPACITY * (row['Dust'] / 1000)
                 dust_loss_rupees = dust_loss_watts * 24 * COST_PER_KWH / 1000
@@ -125,51 +122,47 @@ class MLModels:
                     'Power_Loss': float(dust_loss_watts),
                     'Financial_Loss': float(dust_loss_rupees)
                 })
-                
-            results_df = pd.DataFrame(results)
             
+            results_df = pd.DataFrame(results)
+
             cumulative_loss = 0
             cleaning_date = None
             future_dates = results_df[pd.to_datetime(results_df['Date']) > last_cleaning_date]
             
             if not future_dates.empty:
-                for idx, row in future_dates.iterrows():
+                for _, row in future_dates.iterrows():
                     cumulative_loss += row['Financial_Loss']
-                    if cumulative_loss >= CLEANING_COST and not cleaning_date:
+                    if cumulative_loss >= CLEANING_COST:
                         cleaning_date = row['Date']
                         break
-                
                 if cleaning_date is None:
                     max_dust_idx = future_dates['Dust'].idxmax()
                     cleaning_date = future_dates.loc[max_dust_idx, 'Date']
-            else:
-                cleaning_date = None
-                    
-            total_days = (pd.to_datetime(results_df['Date']).max() - pd.to_datetime(results_df['Date']).min()).days
-            
+
+            total_days = (results_df['Date'].map(pd.to_datetime).max() - 
+                        results_df['Date'].map(pd.to_datetime).min()).days
+
             num_regular_cleanings = max(1, total_days // REGULAR_CLEANING_INTERVAL) if total_days > 0 else 0
             regular_cleaning_cost = num_regular_cleanings * CLEANING_COST
+
             regular_cleaning_dates = [
                 (pd.to_datetime(results_df['Date']).min() + timedelta(days=i * REGULAR_CLEANING_INTERVAL)).strftime('%Y-%m-%d')
                 for i in range(1, num_regular_cleanings + 1)
             ] if total_days > 0 else []
-            
+
             optimized_cleaning_cost = CLEANING_COST if cleaning_date else 0
             optimized_cleaning_dates = [cleaning_date] if cleaning_date else []
-            
+
             total_loss = results_df['Financial_Loss'].sum()
-            
+
             if cleaning_date:
                 pre_cleaning_loss = results_df[pd.to_datetime(results_df['Date']) < pd.to_datetime(cleaning_date)]['Financial_Loss'].sum()
                 optimized_loss = pre_cleaning_loss
             else:
                 optimized_loss = total_loss
-            
-            if cleaning_date:
-                potential_savings = total_loss - (optimized_loss + optimized_cleaning_cost)
-            else:
-                potential_savings = 0
-            
+
+            potential_savings = total_loss - (optimized_loss + optimized_cleaning_cost) if cleaning_date else 0
+
             return {
                 'forecast': results,
                 'cleaning_recommendation': {
@@ -188,6 +181,112 @@ class MLModels:
         except Exception as e:
             print(f"Error in dust model prediction: {e}", file=sys.stderr)
             raise e
+
+    # def dust_model_predict(self, start_date, end_date, last_cleaning_date, dataFrame):
+    #     try:
+    #         if self.dust_model is None:
+    #             self.load_dust_model()
+                
+    #         if self.previous_data is None:
+    #             self.load_previous_data()
+                
+    #         CLEANING_COST = 2000  # ₹2000 per cleaning
+    #         COST_PER_KWH = 7.5    # ₹7.5 per kWh
+    #         PANEL_CAPACITY = 15000  # 15kW system
+    #         REGULAR_CLEANING_INTERVAL = 30  # Days
+                
+    #         start_date = pd.to_datetime(start_date)
+    #         end_date = pd.to_datetime(end_date)
+    #         last_cleaning_date = pd.to_datetime(last_cleaning_date)
+            
+    #         days_to_forecast = (end_date - start_date).days + 1
+            
+    #         date_range = pd.date_range(start=start_date, end=end_date)
+    #         forecast_df = pd.DataFrame({'Date': date_range})
+            
+    #         forecast_df['day_of_year'] = forecast_df['Date'].dt.dayofyear
+    #         forecast_df['month'] = forecast_df['Date'].dt.month
+    #         forecast_df['ds'] = forecast_df['Date']
+            
+    #         prediction_df = self.dust_model.predict(forecast_df[['ds']])
+    #         forecast_df['Dust'] = prediction_df['yhat']
+            
+    #         forecast_df['Dust'] = forecast_df['Dust'].clip(lower=0)
+            
+    #         results = []
+            
+    #         for _, row in forecast_df.iterrows():
+    #             dust_loss_watts = PANEL_CAPACITY * (row['Dust'] / 1000)
+    #             dust_loss_rupees = dust_loss_watts * 24 * COST_PER_KWH / 1000
+    #             results.append({
+    #                 'Date': row['Date'].strftime('%Y-%m-%d'),
+    #                 'Dust': float(row['Dust']),
+    #                 'Power_Loss': float(dust_loss_watts),
+    #                 'Financial_Loss': float(dust_loss_rupees)
+    #             })
+                
+    #         results_df = pd.DataFrame(results)
+            
+    #         cumulative_loss = 0
+    #         cleaning_date = None
+    #         future_dates = results_df[pd.to_datetime(results_df['Date']) > last_cleaning_date]
+            
+    #         if not future_dates.empty:
+    #             for idx, row in future_dates.iterrows():
+    #                 cumulative_loss += row['Financial_Loss']
+    #                 if cumulative_loss >= CLEANING_COST and not cleaning_date:
+    #                     cleaning_date = row['Date']
+    #                     break
+                
+    #             if cleaning_date is None:
+    #                 max_dust_idx = future_dates['Dust'].idxmax()
+    #                 cleaning_date = future_dates.loc[max_dust_idx, 'Date']
+    #         else:
+    #             cleaning_date = None
+                    
+    #         total_days = (pd.to_datetime(results_df['Date']).max() - pd.to_datetime(results_df['Date']).min()).days
+            
+    #         num_regular_cleanings = max(1, total_days // REGULAR_CLEANING_INTERVAL) if total_days > 0 else 0
+    #         regular_cleaning_cost = num_regular_cleanings * CLEANING_COST
+    #         regular_cleaning_dates = [
+    #             (pd.to_datetime(results_df['Date']).min() + timedelta(days=i * REGULAR_CLEANING_INTERVAL)).strftime('%Y-%m-%d')
+    #             for i in range(1, num_regular_cleanings + 1)
+    #         ] if total_days > 0 else []
+            
+    #         optimized_cleaning_cost = CLEANING_COST if cleaning_date else 0
+    #         optimized_cleaning_dates = [cleaning_date] if cleaning_date else []
+            
+    #         total_loss = results_df['Financial_Loss'].sum()
+            
+    #         if cleaning_date:
+    #             pre_cleaning_loss = results_df[pd.to_datetime(results_df['Date']) < pd.to_datetime(cleaning_date)]['Financial_Loss'].sum()
+    #             optimized_loss = pre_cleaning_loss
+    #         else:
+    #             optimized_loss = total_loss
+            
+    #         if cleaning_date:
+    #             potential_savings = total_loss - (optimized_loss + optimized_cleaning_cost)
+    #         else:
+    #             potential_savings = 0
+            
+    #         return {
+    #             'forecast': results,
+    #             'cleaning_recommendation': {
+    #                 'optimal_cleaning_date': cleaning_date,
+    #                 'regular_cleaning_dates': regular_cleaning_dates,
+    #                 'optimized_cleaning_dates': optimized_cleaning_dates,
+    #                 'cost_comparison': {
+    #                     'regular_cleaning_cost': float(regular_cleaning_cost),
+    #                     'optimized_cleaning_cost': float(optimized_cleaning_cost),
+    #                     'total_loss_without_cleaning': float(total_loss),
+    #                     'loss_with_optimized_cleaning': float(optimized_loss + optimized_cleaning_cost),
+    #                     'potential_savings': float(potential_savings)
+    #                 }
+    #             }
+    #         }
+    #     except Exception as e:
+    #         print(f"Error in dust model prediction: {e}", file=sys.stderr)
+    #         raise e
           
     # def dust_model_predict(self, start_date, end_date, last_cleaning_date):
         # try:
@@ -366,6 +465,117 @@ class MLModels:
         #     print(f"Error in dust model prediction: {e}", file=sys.stderr)
         #     raise e
 
+
+        # def dust_model_predict(self, start_date, end_date, last_cleaning_date, dataFrame=None):
+        #     try:
+        #         if self.dust_model is None:
+        #             self.load_dust_model()
+                    
+        #         # Use provided dataFrame if available, otherwise load previous data
+        #         if dataFrame is not None:
+        #             input_data = dataFrame
+        #         else:
+        #             if self.previous_data is None:
+        #                 self.load_previous_data()
+        #             input_data = self.previous_data
+                    
+        #         CLEANING_COST = 2000  # ₹2000 per cleaning
+        #         COST_PER_KWH = 7.5    # ₹7.5 per kWh
+        #         PANEL_CAPACITY = 15000  # 15kW system
+        #         REGULAR_CLEANING_INTERVAL = 30  # Days
+                    
+        #         start_date = pd.to_datetime(start_date)
+        #         end_date = pd.to_datetime(end_date)
+        #         last_cleaning_date = pd.to_datetime(last_cleaning_date)
+                
+        #         days_to_forecast = (end_date - start_date).days + 1
+                
+        #         date_range = pd.date_range(start=start_date, end=end_date)
+        #         forecast_df = pd.DataFrame({'Date': date_range})
+                
+        #         forecast_df['day_of_year'] = forecast_df['Date'].dt.dayofyear
+        #         forecast_df['month'] = forecast_df['Date'].dt.month
+        #         forecast_df['ds'] = forecast_df['Date']
+                
+        #         prediction_df = self.dust_model.predict(forecast_df[['ds']])
+        #         forecast_df['Dust'] = prediction_df['yhat']
+                
+        #         forecast_df['Dust'] = forecast_df['Dust'].clip(lower=0)
+                
+        #         results = []
+                
+        #         for _, row in forecast_df.iterrows():
+        #             dust_loss_watts = PANEL_CAPACITY * (row['Dust'] / 1000)
+        #             dust_loss_rupees = dust_loss_watts * 24 * COST_PER_KWH / 1000
+        #             results.append({
+        #                 'Date': row['Date'].strftime('%Y-%m-%d'),
+        #                 'Dust': float(row['Dust']),
+        #                 'Power_Loss': float(dust_loss_watts),
+        #                 'Financial_Loss': float(dust_loss_rupees)
+        #             })
+                    
+        #         results_df = pd.DataFrame(results)
+                
+        #         cumulative_loss = 0
+        #         cleaning_date = None
+        #         future_dates = results_df[pd.to_datetime(results_df['Date']) > last_cleaning_date]
+                
+        #         if not future_dates.empty:
+        #             for idx, row in future_dates.iterrows():
+        #                 cumulative_loss += row['Financial_Loss']
+        #                 if cumulative_loss >= CLEANING_COST and not cleaning_date:
+        #                     cleaning_date = row['Date']
+        #                     break
+                    
+        #             if cleaning_date is None:
+        #                 max_dust_idx = future_dates['Dust'].idxmax()
+        #                 cleaning_date = future_dates.loc[max_dust_idx, 'Date']
+        #         else:
+        #             cleaning_date = None
+                        
+        #         total_days = (pd.to_datetime(results_df['Date']).max() - pd.to_datetime(results_df['Date']).min()).days
+                
+        #         num_regular_cleanings = max(1, total_days // REGULAR_CLEANING_INTERVAL) if total_days > 0 else 0
+        #         regular_cleaning_cost = num_regular_cleanings * CLEANING_COST
+        #         regular_cleaning_dates = [
+        #             (pd.to_datetime(results_df['Date']).min() + timedelta(days=i * REGULAR_CLEANING_INTERVAL)).strftime('%Y-%m-%d')
+        #             for i in range(1, num_regular_cleanings + 1)
+        #         ] if total_days > 0 else []
+                
+        #         optimized_cleaning_cost = CLEANING_COST if cleaning_date else 0
+        #         optimized_cleaning_dates = [cleaning_date] if cleaning_date else []
+                
+        #         total_loss = results_df['Financial_Loss'].sum()
+                
+        #         if cleaning_date:
+        #             pre_cleaning_loss = results_df[pd.to_datetime(results_df['Date']) < pd.to_datetime(cleaning_date)]['Financial_Loss'].sum()
+        #             optimized_loss = pre_cleaning_loss
+        #         else:
+        #             optimized_loss = total_loss
+                
+        #         if cleaning_date:
+        #             potential_savings = total_loss - (optimized_loss + optimized_cleaning_cost)
+        #         else:
+        #             potential_savings = 0
+                
+        #         return {
+        #             'forecast': results,
+        #             'cleaning_recommendation': {
+        #                 'optimal_cleaning_date': cleaning_date,
+        #                 'regular_cleaning_dates': regular_cleaning_dates,
+        #                 'optimized_cleaning_dates': optimized_cleaning_dates,
+        #                 'cost_comparison': {
+        #                     'regular_cleaning_cost': float(regular_cleaning_cost),
+        #                     'optimized_cleaning_cost': float(optimized_cleaning_cost),
+        #                     'total_loss_without_cleaning': float(total_loss),
+        #                     'loss_with_optimized_cleaning': float(optimized_loss + optimized_cleaning_cost),
+        #                     'potential_savings': float(potential_savings)
+        #                 }
+        #             }
+        #         }
+        #     except Exception as e:
+        #         print(f"Error in dust model prediction: {e}", file=sys.stderr)
+        #         raise e
 
     @staticmethod    
     def load_model_from_url(url):

@@ -22,6 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import BeautifulLoading from "./BeautifulLoading";
 
 // Currency formatter
 function formatPriceINR(amount) {
@@ -38,6 +39,7 @@ function formatPriceINR(amount) {
 
 // Custom tooltip
 const CustomTooltip = ({ active, payload, label }) => {
+  console.log("CustomTooltip", { active, payload, label });
   if (active && payload && payload.length) {
     return (
       <div className="bg-black bg-opacity-80 p-3 rounded border border-gray-700">
@@ -72,7 +74,9 @@ export default function PowerAndDustCharts({ formData }) {
         !formData ||
         !formData.from ||
         !formData.to ||
-        !formData.last_cleaning_date
+        !formData.last_cleaning_date ||
+        !formData.longitude ||
+        !formData.latitude
       )
         return;
 
@@ -86,6 +90,8 @@ export default function PowerAndDustCharts({ formData }) {
             body: JSON.stringify({
               start_date: format(formData.from, "yyyy-MM-dd"),
               end_date: format(formData.to, "yyyy-MM-dd"),
+              latitude: formData.latitude,
+              longitude: formData.longitude,
             }),
             headers: { "Content-Type": "application/json" },
           }
@@ -161,7 +167,7 @@ export default function PowerAndDustCharts({ formData }) {
     fetchData();
   }, [formData]);
 
-  if (loading) return <div className="text-center py-8">Loading data...</div>;
+  if (loading) return <BeautifulLoading/>;
   if (!powerData || !dustData)
     return <div className="text-center py-8">No data available.</div>;
 

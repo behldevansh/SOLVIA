@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import * as React from "react";
-import { addDays, format } from "date-fns";
+import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { DateRange } from "react-day-picker";
 
@@ -35,9 +35,6 @@ import {
 } from "@/components/ui/select";
 
 const formSchema = z.object({
-  // name: z.string().min(2, {
-  //   message: "Username must be at least 2 characters.",
-  // }),
   dateRange: z.object({
     from: z.date(),
     to: z.date(),
@@ -47,6 +44,9 @@ const formSchema = z.object({
   }),
   cleaning_type: z.string().default("onetime"),
   cleaning_frequency: z.string().default(""),
+  location: z.string().min(1, { message: "Location is required." }),
+  latitude: z.number(),
+  longitude: z.number(),
 });
 
 export function DetailForm({ onSubmit }: { onSubmit: any }) {
@@ -60,8 +60,41 @@ export function DetailForm({ onSubmit }: { onSubmit: any }) {
       last_cleaning_date: null,
       cleaning_type: "onetime",
       cleaning_frequency: "",
+      location: "",
+      latitude: 0,
+      longitude: 0,
     },
   });
+
+  const [searchResults, setSearchResults] = React.useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = React.useState("");
+
+  async function handleSearch(query: string) {
+    setSearchQuery(query);
+    if (query.length < 3) {
+      setSearchResults([]);
+      return;
+    }
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?countrycodes=in&q=${encodeURIComponent(
+          query
+        )}&format=json`
+      );
+      const data = await response.json();
+      setSearchResults(data);
+    } catch (error) {
+      console.error("Error searching location:", error);
+    }
+  }
+
+  function handleSelectLocation(location: any) {
+    form.setValue("location", location.display_name);
+    form.setValue("latitude", parseFloat(location.lat));
+    form.setValue("longitude", parseFloat(location.lon));
+    setSearchResults([]);
+    setSearchQuery(location.display_name);
+  }
 
   return (
     <Form {...form}>
@@ -71,19 +104,7 @@ export function DetailForm({ onSubmit }: { onSubmit: any }) {
         })}
         className="space-y-4 flex justify-center flex-col"
       >
-        {/* <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Please enter your Name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        /> */}
+        {/* Date Range Picker */}
         <FormField
           control={form.control}
           name="dateRange"
@@ -122,10 +143,43 @@ export function DetailForm({ onSubmit }: { onSubmit: any }) {
                         initialFocus
                         mode="range"
                         selected={field.value}
-                        onSelect={(date: DateRange) => {
+                        onSelect={(date: any) => {
                           field.onChange(date);
                         }}
                         numberOfMonths={2}
+                        disabled={(date: Date) => {
+                          // Disable dates more than 6 days in the future from today
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          const maxFutureDate = new Date(today);
+                          maxFutureDate.setDate(today.getDate() + 6);
+
+                          if (date > maxFutureDate) {
+                            return true;
+                          }
+
+                          // If a start date is selected, implement range limitations
+                          const startDate = field.value?.from;
+                          if (startDate) {
+                            const fromDate = new Date(startDate);
+                            fromDate.setHours(0, 0, 0, 0);
+
+                            // Disable dates before the selected start date (when selecting end date)
+                            // if (date < fromDate) {
+                            //   return true;
+                            // }
+
+                            // Limit maximum range to 5 days
+                            const maxEndDate = new Date(fromDate);
+                            maxEndDate.setDate(fromDate.getDate() + 5);
+
+                            if (date > maxEndDate) {
+                              return true;
+                            }
+                          }
+
+                          return false;
+                        }}
                       />
                     </PopoverContent>
                   </Popover>
@@ -136,6 +190,8 @@ export function DetailForm({ onSubmit }: { onSubmit: any }) {
             </FormItem>
           )}
         />
+
+        {/* Last Cleaning Date */}
         <FormField
           control={form.control}
           name="last_cleaning_date"
@@ -169,7 +225,7 @@ export function DetailForm({ onSubmit }: { onSubmit: any }) {
                         selected={field.value}
                         onSelect={field.onChange}
                         disabled={(date) => {
-                          const start_date = form.watch("dateRange")?.from;
+                          const start_date: any = form.watch("dateRange")?.from;
                           if (start_date) {
                             return date > start_date;
                           }
@@ -187,6 +243,8 @@ export function DetailForm({ onSubmit }: { onSubmit: any }) {
             </FormItem>
           )}
         />
+
+        {/* Cleaning Type */}
         <FormField
           control={form.control}
           name="cleaning_type"
@@ -215,6 +273,8 @@ export function DetailForm({ onSubmit }: { onSubmit: any }) {
             </FormItem>
           )}
         />
+
+        {/* Cleaning Frequency */}
         <div
           className={cn(
             form.watch("cleaning_type") === "" && "hidden",
@@ -243,7 +303,48 @@ export function DetailForm({ onSubmit }: { onSubmit: any }) {
           />
         </div>
 
+        {/* Location Search */}
+        <FormField
+          control={form.control}
+          name="location"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Location</FormLabel>
+              <FormControl>
+                <div className="relative">
+                  <Input
+                    placeholder="Search location..."
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                  />
+                  {searchResults.length > 0 && (
+                    <div className="absolute z-10 bg-background border border-border w-full mt-1 rounded-md shadow-lg max-h-60 overflow-y-auto text-sm">
+                      {searchResults.map((location, idx) => (
+                        <div
+                          key={idx}
+                          className="p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                          onClick={() => handleSelectLocation(location)}
+                        >
+                          {location.display_name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Hidden Lat / Long */}
+        <input type="hidden" {...form.register("latitude")} />
+        <input type="hidden" {...form.register("longitude")} />
+
         <Button type="submit">Submit</Button>
+        <Button type="reset" variant="destructive" onClick={() => form.reset()}>
+          Reset
+        </Button>
       </form>
     </Form>
   );

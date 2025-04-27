@@ -12,6 +12,8 @@ export default function Page() {
     cleaning_type?: string | null;
     cleaning_frequency?: string | null;
     last_cleaning_date?: Date | null;
+    latitude?: number | null;
+    longitude?: number | null;
   }>({});
 
   const [visible, setVisible] = useState(false);
@@ -19,12 +21,13 @@ export default function Page() {
   const onSubmit = (data: any) => {
     const { dateRange, last_cleaning_date } = data;
     setFormData({
-      last_cleaning_date,
       from: dateRange?.from,
       to: dateRange?.to,
       cleaning_type: data.cleaning_type,
       cleaning_frequency: data.cleaning_frequency,
       last_cleaning_date: data.last_cleaning_date,
+      latitude: data.latitude,
+      longitude: data.longitude,
     });
     setVisible(true);
   };

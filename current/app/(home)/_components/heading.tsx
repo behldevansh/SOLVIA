@@ -16,15 +16,10 @@ const Heading = () => {
       <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold">
         Sunlit Intelligence, Powered by ML Precision
         <div>
-          Welcome to <span className="underline">SOLVIA</span>
+          Welcome to <span className="underline">Opti-Clean</span>
         </div>
       </h1>
 
-
-<br/>
-      <h2 className="text-base sm:text-xl md:text-2xl font-medium">
-      Solar Optimization via Learning-driven Visual Intelligent Analytics <br />
-      </h2>
       <h3 className="text-base sm:text-xl md:text-2xl font-medium">
         Transforming solar panel care with ML-driven insights, <br />
         ensuring efficiency and sustainability with every sunbeam.
