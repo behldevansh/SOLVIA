@@ -16,9 +16,13 @@ const Heading = () => {
       <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold">
         Sunlit Intelligence, Powered by ML Precision
         <div>
-          Welcome to <span className="underline">Opti-Clean</span>
+          Welcome to <span className="underline">SOLVIA</span>
         </div>
       </h1>
+
+      <h2 className="text-base sm:text-xl md:text-2xl font-medium">
+        Solar Optimization via Learning-driven Visual Intelligent Analytics 
+      </h2>
 
       <h3 className="text-base sm:text-xl md:text-2xl font-medium">
         Transforming solar panel care with ML-driven insights, <br />
@@ -32,7 +36,7 @@ const Heading = () => {
       {isAuthenticated && !isLoading && (
         <Button asChild>
           <Link href="/ML">
-            <span>Enter Opti-Clean</span>
+            <span>Enter SOLVIA</span>
             <ArrowRight className="h-4 w-4 ml-2" />
           </Link>
         </Button>
@@ -40,7 +44,7 @@ const Heading = () => {
       {!isAuthenticated && !isLoading && (
         <SignInButton mode="modal">
           <Button>
-            Join Opti-Clean
+            Join SOLVIA
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         </SignInButton>

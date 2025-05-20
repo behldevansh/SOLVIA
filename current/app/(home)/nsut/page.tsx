@@ -1,19 +1,16 @@
 "use client";
-import PowerChart from "@/components/Chart/PowerChart";
-import { DetailForm } from "@/components/Form/DetailForm";
+import NSUTCHART from "@/components/Chart/NSUTChart";
+import { NSUTForm } from "@/components/Form/NSUTForm";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
 export default function Page() {
   const [formData, setFormData] = useState<{
-    last_cleaning_date?: Date;
     from?: Date;
     to?: Date;
     cleaning_type?: string | null;
     cleaning_frequency?: string | null;
     last_cleaning_date?: Date | null;
-    latitude?: number | null;
-    longitude?: number | null;
   }>({});
 
   const [visible, setVisible] = useState(false);
@@ -26,8 +23,6 @@ export default function Page() {
       cleaning_type: data.cleaning_type,
       cleaning_frequency: data.cleaning_frequency,
       last_cleaning_date: data.last_cleaning_date,
-      latitude: data.latitude,
-      longitude: data.longitude,
     });
     setVisible(true);
   };
@@ -47,12 +42,12 @@ export default function Page() {
               Reset
             </Button>
           </div>
-          <PowerChart formData={formData} />
+          <NSUTCHART formData={formData} />
         </>
       ) : (
         <>
           <div className="text-2xl font-bold text-center mb-2">
-            Prediction Solar Power
+            NSUT Prediction
           </div>
           <div className="text-center mb-2">
             <p className="text-gray-500">
@@ -60,7 +55,7 @@ export default function Page() {
             </p>
           </div>
           <div className="">
-            <DetailForm onSubmit={onSubmit} />
+            <NSUTForm onSubmit={onSubmit} />
           </div>
         </>
       )}

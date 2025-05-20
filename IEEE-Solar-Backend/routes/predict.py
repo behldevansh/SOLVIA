@@ -8,7 +8,7 @@ from schemas.predict import RequestBody, ResponseBody, RangeDates, RangeResponse
 import pandas as pd
 from datetime import timedelta
 from config import *
-from models import ml_models
+from models import ml_models, nsut_model
 import random
 import numpy as np
 from datetime import datetime, date
@@ -222,3 +222,7 @@ def test_get_combined_data():
 
 # You can call this function to test
 # test_get_combined_data()
+
+
+
+
